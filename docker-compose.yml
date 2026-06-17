@@ -1,0 +1,39 @@
+version: "3.8"
+
+services:
+  Mysql:
+    image : mysql:8.0
+    container_name: container_sql
+    environment:
+      MYSQL_ROOT_PASSWORD:
+      MYSQL_DATABASE:
+      MYSQL_USER : DBA
+      MYSQL_PASSWORD:
+    ports:
+      - "306:3306"
+    volumes:
+      -
+
+
+
+  services-agent:
+    build: ./service-agent
+    container_name: container_agent
+    ports:
+      - "8004:8000"
+    depends_on:
+      - mysql
+    environment:
+      - DATABASE_URL=mysql+pymysql://user:password@mysql:3306/bank_db
+
+  service-logs:
+    build: ./service-logs
+    container_name: container_logs
+    ports:
+      - "8005:8000"
+    depends_on:
+      - mysql
+      - nats
+    environment:
+      - DATABASE_URL=mysql+pymysql://user:password@mysql:3306/logs_db
+      - NATS_URL=nats://nats:4222
