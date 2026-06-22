@@ -1,0 +1,118 @@
+from fastapi import FastAPI, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+import models
+import schemas
+import auth
+from database import engine, get_db
+import nats
+import json
+from datetime import datetime
+
+# Crée toutes les tables dans MySQL au démarrage du service
+models.Base.metadata.create_all(bind=engine)
+
+# Initialise l'application FastAPI
+app = FastAPI(title="Service Authentification")
+
+# Connexion à NATS pour publier les logs
+async def publier_log(sujet: str, message: dict):
+    # Connecte à NATS et publie un message
+    # Les autres services abonnés recevront ce message
+    try:
+        nc = await nats.connect("nats://nats:4222")
+        await nc.publish(sujet, json.dumps(message).encode())
+        await nc.close()
+    except Exception:
+        # Si NATS n'est pas disponible on continue quand même
+        pass
+
+@app.post("/register", response_model=schemas.UtilisateurResponse)
+async def inscription(utilisateur: schemas.UtilisateurCreate, db: Session = Depends(get_db)):
+    # Vérifie si l'email est déjà utilisé
+    existant = db.query(models.Utilisateur).filter(
+        models.Utilisateur.email == utilisateur.email
+    ).first()
+    
+    if existant:
+        raise HTTPException(
+            status_code=400,
+            detail="Cet email est déjà utilisé"
+        )
+    
+    # Hashe le mot de passe avant de le stocker
+    mot_de_passe_hashe = auth.hasher_mot_de_passe(utilisateur.mot_de_passe)
+    
+    # Crée le nouvel utilisateur en base de données
+    nouvel_utilisateur = models.Utilisateur(
+        email=utilisateur.email,
+        mot_de_passe=mot_de_passe_hashe,
+        role=utilisateur.role
+    )
+    
+    db.add(nouvel_utilisateur)
+    db.commit()
+    db.refresh(nouvel_utilisateur)
+    
+    return nouvel_utilisateur
+
+@app.post("/login", response_model=schemas.Token)
+async def connexion(utilisateur: schemas.UtilisateurLogin, db: Session = Depends(get_db)):
+    # Cherche l'utilisateur dans la base de données
+    user = db.query(models.Utilisateur).filter(
+        models.Utilisateur.email == utilisateur.email
+    ).first()
+    
+    # Vérifie que l'utilisateur existe et que le mot de passe est correct
+    if not user or not auth.verifier_mot_de_passe(utilisateur.mot_de_passe, user.mot_de_passe):
+        
+        # Publie un log d'échec de connexion dans NATS
+        await publier_log("auth.echec", {
+            "email": utilisateur.email,
+            "message": "Tentative de connexion échouée",
+            "date": datetime.utcnow().isoformat()
+        })
+        
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email ou mot de passe incorrect"
+        )
+    
+    # Crée le token JWT avec l'email et le rôle de l'utilisateur
+    token = auth.creer_token_jwt({
+        "sub": user.email,
+        "role": user.role.value
+    })
+    
+    # Publie un log de connexion réussie dans NATS
+    await publier_log("auth.connexion", {
+        "email": user.email,
+        "role": user.role.value,
+        "message": "Connexion réussie",
+        "date": datetime.utcnow().isoformat()
+    })
+    
+    return {"access_token": token, "token_type": "bearer"}
+
+@app.get("/verify-token")
+async def verifier_token(token_data = Depends(auth.verifier_token)):
+    # Vérifie si le token est valide et retourne les informations de l'utilisateur
+    # Cet endpoint est utilisé par les autres services pour vérifier les accès
+    return {
+        "email": token_data["email"],
+        "role": token_data["role"]
+    }
+
+@app.get("/me", response_model=schemas.UtilisateurResponse)
+async def mon_profil(token_data = Depends(auth.verifier_token), db: Session = Depends(get_db)):
+    # Retourne les informations de l'utilisateur actuellement connecté
+    user = db.query(models.Utilisateur).filter(
+        models.Utilisateur.email == token_data["email"]
+    ).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="Utilisateur non trouvé"
+        )
+    
+    return user
