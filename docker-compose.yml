@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
 
   # Base de données MySQL partagée par tous les services
