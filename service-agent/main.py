@@ -84,7 +84,20 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux agents"
         )
-    return data
+        # Récupère les informations complètes de l'agent depuis le service auth
+    me_response = httpx.get(
+        "http://service-authentication:8000/me",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    agent_data = me_response.json()
+
+    # Retourne l'id et les infos de l'agent
+    return {
+        "id": agent_data["id"],
+        "email": agent_data["email"],
+        "role": agent_data["role"]
+    }
+
 
 app = FastAPI()
 
