@@ -4,4 +4,5 @@ sqlmodel
 pymysql
 python-jose[cryptography]
 nats-py
-hppx
+httpx
+python-dotenv

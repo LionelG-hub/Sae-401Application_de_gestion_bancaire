@@ -7,6 +7,7 @@ import os
 import httpx
 import json
 import nats
+import time
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -50,7 +51,18 @@ async def publish_log(level: str, message: str, user_id: int = None):
     await nc.publish("logs.agent", data)
     await nc.close()
 
-SQLModel.metadata.create_all(engine)
+def attendre_mysql(max_tentatives=10):
+    for tentative in range(max_tentatives):
+        try:
+            SQLModel.metadata.create_all(engine)
+            print("Connexion MySQL réussie")
+            return
+        except Exception:
+            print(f"MySQL pas encore prêt, tentative {tentative + 1}/{max_tentatives}")
+            time.sleep(3)
+    raise Exception("Impossible de se connecter à MySQL")
+
+attendre_mysql()
 
 
 
@@ -72,7 +84,20 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux agents"
         )
-    return data
+        # Récupère les informations complètes de l'agent depuis le service auth
+    me_response = httpx.get(
+        "http://service-authentication:8000/me",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    agent_data = me_response.json()
+
+    # Retourne l'id et les infos de l'agent
+    return {
+        "id": agent_data["id"],
+        "email": agent_data["email"],
+        "role": agent_data["role"]
+    }
+
 
 app = FastAPI()
 
