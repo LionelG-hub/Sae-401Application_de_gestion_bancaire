@@ -3,9 +3,13 @@ from typing import Optional
 from fastapi import FastAPI
 from sqlmodel import SQLModel, create_engine, Session ,Field ,select
 import os
+import json
+import nats
+
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
+NATS_URL = os.getenv("NATS_URL")
 
 class Operation(SQLModel, table=True):
     id            : Optional[int] = Field(default=None, primary_key=True)
@@ -28,6 +32,17 @@ class User(SQLModel, table=True):
     id    : Optional[int] = Field(default=None, primary_key=True)
     email : str
     role  : str
+
+async def publish_log(level: str, message: str, user_id: int = None):
+    nc = await nats.connect(NATS_URL)
+    data = json.dumps({
+        "service": "agent",
+        "level": level,
+        "message": message,
+        "user_id": user_id
+    }).encode()
+    await nc.publish("logs.agent", data)
+    await nc.close()
 
 SQLModel.metadata.create_all(engine)
 
@@ -53,7 +68,7 @@ def get_historique():
         ).all()
         return operations
 @app.patch("/agent/operations/{id}/valider")
-def valider_operation(id: int):
+async def valider_operation(id: int):
     with Session(engine) as session:
         # 1. Récupérer l'opération
         operation = session.get(Operation, id)
@@ -70,10 +85,16 @@ def valider_operation(id: int):
         session.commit()  # envoie le UPDATE à MySQL
         session.refresh(operation)  # recharge les données depuis MySQL
 
+        await publish_log(
+            level="INFO",
+            message=f"Opération {id} validée",
+            user_id=operation.traite_par
+        )
+
         return operation
 
 @app.patch("/agent/operations/{id}/refuser")
-def refuser_operation(id: int):
+async def refuser_operation(id: int):
     with Session(engine) as session:
 
         operation = session.get(Operation, id)
@@ -87,6 +108,12 @@ def refuser_operation(id: int):
         session.add(operation)
         session.commit()
         session.refresh(operation)
+
+        await publish_log(
+            level="INFO",
+            message=f"Opération {id} refuséé",
+            user_id=operation.traite_par
+        )
 
         return operation
 #fonctions sur les comptes
