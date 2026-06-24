@@ -1,8 +1,10 @@
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import SQLModel, create_engine, Session ,Field ,select
 import os
+import httpx
 import json
 import nats
 
@@ -10,6 +12,7 @@ import nats
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 NATS_URL = os.getenv("NATS_URL")
+security = HTTPBearer()
 
 class Operation(SQLModel, table=True):
     id            : Optional[int] = Field(default=None, primary_key=True)
@@ -28,10 +31,13 @@ class Compte(SQLModel, table=True):
     solde              :  float    = Field(default=None)
     derniere_operation : Optional[datetime] = Field(default=None)
 
+"""
 class User(SQLModel, table=True):
     id    : Optional[int] = Field(default=None, primary_key=True)
     email : str
     role  : str
+"""
+
 
 async def publish_log(level: str, message: str, user_id: int = None):
     nc = await nats.connect(NATS_URL)
@@ -46,6 +52,28 @@ async def publish_log(level: str, message: str, user_id: int = None):
 
 SQLModel.metadata.create_all(engine)
 
+
+
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    # Appelle le service auth pour vérifier le token
+    response = httpx.get(
+        "http://service-authentication:8000/verify-token",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    if response.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token invalide"
+        )
+    data = response.json()
+    if data["role"] != "agent":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Accès réservé aux agents"
+        )
+    return data
+
 app = FastAPI()
 
 @app.get("/")
@@ -53,7 +81,7 @@ def health_check():
     return {"status": "service-agent ok"}
 #fonctions sur les opération
 @app.get("/agent/operations/en-attente")
-def get_en_attente():
+def get_en_attente(user=Depends(verify_token)):
     with Session(engine) as session:
         operations = session.exec(
             select(Operation).where(Operation.statut == "en_attente")
@@ -61,14 +89,14 @@ def get_en_attente():
         return operations
 
 @app.get("/agent/operations/historique")
-def get_historique():
+def get_historique(user=Depends(verify_token)):
     with Session(engine) as session:
         operations = session.exec(
             select(Operation).where(Operation.statut != "en_attente")
         ).all()
         return operations
 @app.patch("/agent/operations/{id}/valider")
-async def valider_operation(id: int):
+async def valider_operation(id: int,user=Depends(verify_token)):
     with Session(engine) as session:
         # 1. Récupérer l'opération
         operation = session.get(Operation, id)
@@ -94,7 +122,7 @@ async def valider_operation(id: int):
         return operation
 
 @app.patch("/agent/operations/{id}/refuser")
-async def refuser_operation(id: int):
+async def refuser_operation(id: int ,user=Depends(verify_token)):
     with Session(engine) as session:
 
         operation = session.get(Operation, id)
@@ -117,15 +145,15 @@ async def refuser_operation(id: int):
 
         return operation
 #fonctions sur les comptes
-"""""
-option 1 appel au service_auth
-import httpx
+
+# option 1 appel au service_auth
 
 @app.get("/agent/clients")
-def get_clients():
-    response = httpx.get("http://service-auth:8001/auth/clients")
+def get_clients(user=Depends(verify_token)):
+    response =  httpx.get("http://service-authentication:8000/clients")
+    
     return response.json()
-"""""
+"""
 #option 2 acccède directement à la base de  donné
 @app.get("/agent/clients")
 def get_clients():
@@ -134,8 +162,9 @@ def get_clients():
             select(User).where(User.role == "client")
         ).all()
         return clients
+"""
 @app.get("/agent/clients/{user_id}/comptes")
-def get_compte_client(user_id: int):
+def get_compte_client(user_id: int,user=Depends(verify_token)):
     with Session(engine) as session:
         comptes= session.exec(select(Compte).where(Compte.user_id == user_id)
         ).all()
