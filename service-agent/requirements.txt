@@ -5,3 +5,4 @@ pymysql
 python-jose[cryptography]
 nats-py
 httpx
+python-dotenv

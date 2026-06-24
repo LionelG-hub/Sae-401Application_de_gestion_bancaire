@@ -7,6 +7,7 @@ import os
 import httpx
 import json
 import nats
+import time
 
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -50,7 +51,18 @@ async def publish_log(level: str, message: str, user_id: int = None):
     await nc.publish("logs.agent", data)
     await nc.close()
 
-SQLModel.metadata.create_all(engine)
+def attendre_mysql(max_tentatives=10):
+    for tentative in range(max_tentatives):
+        try:
+            SQLModel.metadata.create_all(engine)
+            print("Connexion MySQL réussie")
+            return
+        except Exception:
+            print(f"MySQL pas encore prêt, tentative {tentative + 1}/{max_tentatives}")
+            time.sleep(3)
+    raise Exception("Impossible de se connecter à MySQL")
+
+attendre_mysql()
 
 
 
