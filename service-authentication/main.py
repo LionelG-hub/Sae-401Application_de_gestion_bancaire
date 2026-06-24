@@ -106,6 +106,7 @@ async def connexion(utilisateur: schemas.UtilisateurLogin, db: Session = Depends
 @app.get("/verify-token")
 async def verifier_token(token_data = Depends(auth.verifier_token)):
     # Vérifie si le token est valide et retourne les informations de l'utilisateur
+    # Cet endpoint est utilisé par les autres services pour vérifier les accès
     return {
         "email": token_data["email"],
         "role": token_data["role"]
@@ -125,3 +126,20 @@ async def mon_profil(token_data = Depends(auth.verifier_token), db: Session = De
         )
 
     return user
+
+@app.get("/clients")
+async def get_clients(db: Session = Depends(get_db)):
+    # Retourne tous les utilisateurs avec le rôle client
+    # Cet endpoint est utilisé par le service agent
+    clients = db.query(models.Utilisateur).filter(
+        models.Utilisateur.role == models.RoleEnum.client
+    ).all()
+    return clients
+
+@app.get("/agents")
+async def get_agents(db: Session = Depends(get_db)):
+    # Retourne tous les utilisateurs avec le rôle agent
+    agents = db.query(models.Utilisateur).filter(
+        models.Utilisateur.role == models.RoleEnum.agent
+    ).all()
+    return agents
