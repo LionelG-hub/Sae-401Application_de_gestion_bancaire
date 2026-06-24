@@ -4,3 +4,4 @@ sqlmodel
 pymysql
 #python-jose[cryptography] ou python-jwt ou PyJWT demander à pôle1
 nats-py
+#hppx

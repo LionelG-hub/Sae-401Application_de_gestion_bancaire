@@ -1,4 +1,3 @@
-version: "3.8"
 
 services:
   mysql:
@@ -11,8 +10,14 @@ services:
       MYSQL_PASSWORD: acess123
     ports:
       - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   nats:
     image: nats:2.10-alpine
@@ -28,21 +33,26 @@ services:
     ports:
       - "8004:8000"
     depends_on:
-      - mysql
-      - nats
+      mysql:
+        condition: service_healthy
+      nats:
+        condition: service_started
     environment:
       - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
+      - NATS_URL=nats://nats:4222
 
   service-logs:
-    build: ./service-logs
-    container_name: container_logs
-    ports:
-      - "8005:8000"
-    depends_on:
-      - mysql
-      - nats
-    environment:
-      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
-      - NATS_URL=nats://nats:4222
+      build: ./service-logs
+      container_name: container_logs
+      ports:
+        - "8005:8000"
+      depends_on:
+        mysql:
+          condition: service_healthy
+        nats:
+          condition: service_started
+      environment:
+        - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
+        - NATS_URL=nats://nats:4222
 volumes:
   mysql_data:
