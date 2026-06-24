@@ -2,6 +2,6 @@ fastapi
 uvicorn
 sqlmodel
 pymysql
-#python-jose[cryptography] ou python-jwt ou PyJWT demander à pôle1
+python-jose[cryptography]
 nats-py
-#hppx
+hppx
