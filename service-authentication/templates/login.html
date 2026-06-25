@@ -67,7 +67,7 @@
                 if (reponse.ok) {
                     // Stocke le token et redirige vers l'espace client
                     localStorage.setItem('token', donnees.access_token);
-                    window.location.href = '/client/dashboard';
+                    window.location.href = 'http://localhost:8001/client/dashboard';
                 } else {
                     // Affiche le message d'erreur retourné par l'API
                     erreur.classList.remove('d-none');
