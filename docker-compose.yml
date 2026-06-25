@@ -1,26 +1,16 @@
-# Base de données MySQL partagée par tous les services
-
 services:
+
+  # Base de données MySQL partagée par tous les services
   mysql:
-    image : mysql:8.0
+    image: mysql:8.0
     container_name: container_sql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: bank_db
-      MYSQL_USER: DBA
-      MYSQL_PASSWORD: acess123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
       - "3306:3306"
-      MYSQL_USER : DBA
-      MYSQL_PASSWORD: acess123
-      TZ: Europe/Paris
-    ports:
-      - "3306:3306"
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -42,14 +32,14 @@ services:
       - mysql
       - nats
     environment:
-      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/auth_db
-      - SECRET_KEY=cle_secrete_bancaire_sae401
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/auth_db
+      - SECRET_KEY=${SECRET_KEY}
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - NATS_URL=nats://nats:4222
 
   # Service agent bancaire — L
-  services-agent:
+  service-agent:
     build: ./service-agent
     container_name: container_agent
     ports:
@@ -57,8 +47,10 @@ services:
     depends_on:
       - mysql
       - nats
+      - service-authentication
     environment:
-      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/bank_db
+      - NATS_URL=nats://nats:4222
 
   # Service client — B
   service-client:
@@ -71,10 +63,10 @@ services:
       - nats
       - service-authentication
     environment:
-      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/bank_db
       - AUTH_SERVICE_URL=http://service-authentication:8000
 
-  # Service logs — L
+  # Service logs
   service-logs:
     build: ./service-logs
     container_name: container_logs
@@ -84,33 +76,8 @@ services:
       - mysql
       - nats
     environment:
-      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
+      - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/logs_db
       - NATS_URL=nats://nats:4222
 
-      mysql:
-        condition: service_healthy
-      nats:
-        condition: service_started
-      service-authentication:
-        condition: service_started
-    environment:
-      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
-      - NATS_URL=nats://nats:4222
-      - TZ=Europe/Paris
-
-  service-logs:
-      build: ./service-logs
-      container_name: container_logs
-      ports:
-        - "8005:8000"
-      depends_on:
-        mysql:
-          condition: service_healthy
-        nats:
-          condition: service_started
-      environment:
-        - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
-        - NATS_URL=nats://nats:4222
-        - TZ=Europe/Paris 
 volumes:
   mysql_data:
