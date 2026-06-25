@@ -2,12 +2,13 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI
-from sqlmodel import SQLModel, create_engine, Session, Field, select
+from sqlmodel import SQLModel, create_engine, Session, Field, select ,func
+from dotenv import load_dotenv
 import json
 import os
-import asyncio
 import nats
 
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 NATS_URL = os.getenv("NATS_URL")
 
@@ -70,4 +71,21 @@ def get_logs(
             query = query.where(Log.created_at <= to_date)
         logs = session.exec(query).all()
         return logs
+@app.get("/logs/stats")
+def get_logs_stats():
+    with Session(engine) as session:
+        total = session.exec(select(func.count(Log.id))).one()
 
+        par_service = session.exec(
+            select(Log.service, func.count(Log.id)).group_by(Log.service)
+        ).all()
+
+        par_level = session.exec(
+            select(Log.level, func.count(Log.id)).group_by(Log.level)
+        ).all()
+
+        return {
+            "total": total,
+            "par_service": dict(par_service),
+            "par_level": dict(par_level)
+        }
