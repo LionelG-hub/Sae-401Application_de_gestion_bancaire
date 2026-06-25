@@ -106,7 +106,7 @@ async def connexion(utilisateur: schemas.UtilisateurLogin, db: Session = Depends
         "date": datetime.utcnow().isoformat()
     })
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "role": user.role.value}
 
 @app.get("/verify-token")
 async def verifier_token(token_data = Depends(auth.verifier_token)):
