@@ -73,7 +73,7 @@
                     }
                     // Stocke le token et redirige vers l'espace agent
                     localStorage.setItem('token', donnees.access_token);
-                    window.location.href = '/agent/dashboard';
+                    window.location.href = 'http://localhost:8004/agent/dashboard';
                 } else {
                     // Affiche le message d'erreur retourné par l'API
                     erreur.classList.remove('d-none');
