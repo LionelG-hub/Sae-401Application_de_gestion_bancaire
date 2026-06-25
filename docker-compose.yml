@@ -1,8 +1,4 @@
-services:
-
-  # Base de données MySQL partagée par tous les services
-  mysql:
-    image: mysql:8.0
+# Base de données MySQL partagée par tous les services
 
 services:
   mysql:
