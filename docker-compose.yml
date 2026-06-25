@@ -3,6 +3,10 @@ services:
   # Base de données MySQL partagée par tous les services
   mysql:
     image: mysql:8.0
+
+services:
+  mysql:
+    image : mysql:8.0
     container_name: container_sql
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -11,6 +15,16 @@ services:
       MYSQL_PASSWORD: acess123
     ports:
       - "3306:3306"
+      MYSQL_USER : DBA
+      MYSQL_PASSWORD: acess123
+      TZ: Europe/Paris
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -39,7 +53,7 @@ services:
       - NATS_URL=nats://nats:4222
 
   # Service agent bancaire — L
-  service-agent:
+  services-agent:
     build: ./service-agent
     container_name: container_agent
     ports:
@@ -64,7 +78,7 @@ services:
       - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
       - AUTH_SERVICE_URL=http://service-authentication:8000
 
-  # Service logs
+  # Service logs — L
   service-logs:
     build: ./service-logs
     container_name: container_logs
@@ -77,5 +91,30 @@ services:
       - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
       - NATS_URL=nats://nats:4222
 
+      mysql:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      service-authentication:
+        condition: service_started
+    environment:
+      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
+      - NATS_URL=nats://nats:4222
+      - TZ=Europe/Paris
+
+  service-logs:
+      build: ./service-logs
+      container_name: container_logs
+      ports:
+        - "8005:8000"
+      depends_on:
+        mysql:
+          condition: service_healthy
+        nats:
+          condition: service_started
+      environment:
+        - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
+        - NATS_URL=nats://nats:4222
+        - TZ=Europe/Paris 
 volumes:
   mysql_data:
