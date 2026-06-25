@@ -9,3 +9,4 @@ python-dotenv
 nats-py
 python-multipart
 email-validator
+jinja2
