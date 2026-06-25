@@ -1,3 +1,8 @@
+services:
+
+  # Base de données MySQL partagée par tous les services
+  mysql:
+    image: mysql:8.0
 
 services:
   mysql:
@@ -6,6 +11,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: bank_db
+      MYSQL_USER: DBA
+      MYSQL_PASSWORD: acess123
+    ports:
+      - "3306:3306"
       MYSQL_USER : DBA
       MYSQL_PASSWORD: acess123
       TZ: Europe/Paris
@@ -20,20 +29,68 @@ services:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
+  # Serveur de messagerie NATS pour les logs
   nats:
     image: nats:2.10-alpine
     container_name: container_nats
     ports:
       - "4222:4222"
 
+  # Service authentification — Ibrahima
+  service-authentication:
+    build: ./service-authentication
+    container_name: container_auth
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+      - nats
+    environment:
+      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/auth_db
+      - SECRET_KEY=cle_secrete_bancaire_sae401
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=30
+      - NATS_URL=nats://nats:4222
 
-
+  # Service agent bancaire — L
   services-agent:
     build: ./service-agent
     container_name: container_agent
     ports:
       - "8004:8000"
     depends_on:
+      - mysql
+      - nats
+    environment:
+      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
+
+  # Service client — B
+  service-client:
+    build: ./service-client
+    container_name: container_client
+    ports:
+      - "8001:8000"
+    depends_on:
+      - mysql
+      - nats
+      - service-authentication
+    environment:
+      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/bank_db
+      - AUTH_SERVICE_URL=http://service-authentication:8000
+
+  # Service logs — L
+  service-logs:
+    build: ./service-logs
+    container_name: container_logs
+    ports:
+      - "8005:8000"
+    depends_on:
+      - mysql
+      - nats
+    environment:
+      - DATABASE_URL=mysql+pymysql://DBA:acess123@mysql:3306/logs_db
+      - NATS_URL=nats://nats:4222
+
       mysql:
         condition: service_healthy
       nats:
