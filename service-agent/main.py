@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlmodel import SQLModel, create_engine, Session ,Field ,select
+from dotenv import load_dotenv
 import os
 import httpx
 import json
