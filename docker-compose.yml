@@ -1,16 +1,8 @@
-<<<<<<< HEAD
 services:
 
   # Base de données MySQL partagée par tous les services
   mysql:
     image: mysql:8.0
-=======
-# Base de données MySQL partagée par tous les services
-
-services:
-  mysql:
-    image : mysql:8.0
->>>>>>> 5ed1106006dd703fd81e12657600af8cb3bfe39b
     container_name: container_sql
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
