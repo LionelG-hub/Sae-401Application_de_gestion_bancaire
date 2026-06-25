@@ -9,7 +9,8 @@ import json
 import nats
 import time
 
-
+# Charge les variables du fichier .env
+load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 NATS_URL = os.getenv("NATS_URL")
@@ -169,9 +170,7 @@ async def refuser_operation(id: int ,user=Depends(verify_token)):
         )
 
         return operation
-#fonctions sur les comptes
-
-# option 1 appel au service_auth
+#fonctions sur les comptes/option 1 appel au service_auth
 
 @app.get("/agent/clients")
 def get_clients(user=Depends(verify_token)):
