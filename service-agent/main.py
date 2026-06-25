@@ -11,6 +11,7 @@ import time
 
 # Charge les variables du fichier .env
 load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 engine = create_engine(DATABASE_URL)
 NATS_URL = os.getenv("NATS_URL")
@@ -132,7 +133,7 @@ async def valider_operation(id: int,user=Depends(verify_token)):
             return {"error": "opération introuvable"}
 
         operation.statut = "validee"
-        operation.traite_par = 1
+        operation.traite_par = user["id"]
 
         # 4. Sauvegarder
         session.add(operation)  # signale la modification à SQLModel
@@ -157,7 +158,7 @@ async def refuser_operation(id: int ,user=Depends(verify_token)):
             return {"error": "opération introuvable"}
 
         operation.statut = "refusee"
-        operation.traite_par = 1
+        operation.traite_par = user["id"]
 
         session.add(operation)
         session.commit()
