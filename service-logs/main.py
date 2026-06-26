@@ -2,11 +2,11 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI,Request
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session, Field, select ,func
 from dotenv import load_dotenv
-import time
 import json
 import time
 import os
@@ -66,6 +66,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 
 
 @app.get("/")

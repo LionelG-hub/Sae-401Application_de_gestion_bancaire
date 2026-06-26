@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Optional
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.templating import Jinja2Templates
@@ -107,6 +108,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 
 
 @app.get("/")
@@ -209,4 +211,4 @@ async def dashboard_agent(request: Request):
 
 @app.get("/agent/clients/{user_id}/dashboard", response_class=HTMLResponse)
 async def dashboard_comptes_client(request: Request, user_id: int):
-    return templates.TemplateResponse(request=request, name="comptes_client.html", context={"user_id": user_id})
+    return templates.TemplateResponse(request=request, name="compte_client.html", context={"user_id": user_id})
