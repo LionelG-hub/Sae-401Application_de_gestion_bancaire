@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Interface Agent</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Interface Agent Bancaire</h1>
+    <button onclick="deconnexion()">Déconnexion</button>
+</header>
+
+<section>
+    <h2>Opérations en attente</h2>
+    <div id="liste-operations">
+        <!-- les opérations seront chargées ici par JS -->
+    </div>
+</section>
+
+<section>
+    <h2>Comptes d'un client</h2>
+    <input type="number" id="user-id" placeholder="ID du client">
+    <button onclick="rechercherComptes()">Rechercher</button>
+    <div id="liste-comptes">
+        <!-- les comptes seront chargées ici par JS -->
+    </div>
+</section>
+
+</body>
+<script src="/static/js/agent.js"></script>
+</html>

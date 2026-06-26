@@ -6,3 +6,5 @@ python-jose[cryptography]
 nats-py
 httpx
 python-dotenv
+jinja2
+python-multipart

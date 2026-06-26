@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interface Logs</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+    <h1>Interface Logs</h1>
+    <button onclick="deconnexion()">Déconnexion</button>
+</header>
+<section>
+    <h2>Filtres</h2>
+    <input type="text" id="service" placeholder="Service (agent, auth...)">
+    <input type="text" id="level" placeholder="Level (INFO, WARNING, ERROR)">
+    <input type="datetime-local" id="from-date">
+    <input type="datetime-local" id="to-date">
+    <button onclick="chargerLogs()">Rechercher</button>
+    <button onclick="chargerStats()">Voir les stats</button>
+</section>
+<section>
+    <h2>Logs</h2>
+    <div id="liste-logs">Chargement...</div>
+</section>
+<section>
+    <h2>Statistiques</h2>
+    <div id="stats">Chargement...</div>
+</section>
+<script src="/static/js/logs.js"></script>
+</body>
+</html>
+
