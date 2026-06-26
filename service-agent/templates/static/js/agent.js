@@ -1,4 +1,6 @@
-const token = localStorage.getItem("token");
+const params = new URLSearchParams(window.location.search);
+const token = params.get("token") || localStorage.getItem("token");
+if (token) localStorage.setItem("token", token);
 if (!token) window.location.href = "/login-agent-page";
 
 const headers = { "Authorization": `Bearer ${token}` };
