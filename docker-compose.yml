@@ -54,7 +54,7 @@ services:
 
   # Service client — B
   service-client:
-    build: ./service-client
+    build: service-client(1)
     container_name: container_client
     ports:
       - "8001:8000"

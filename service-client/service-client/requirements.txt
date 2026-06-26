@@ -1,8 +1,0 @@
-fastapi
-uvicorn
-sqlmodel
-pymysql
-httpx
-nats-py
-python-dotenv
-jinja2
