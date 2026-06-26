@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session, Field, select ,func
 from dotenv import load_dotenv
 import json
+import time
 import os
 import nats
 
@@ -42,8 +43,18 @@ async def handle_message(msg):
     with Session(engine) as session:
         session.add(log)
         session.commit()
+def attendre_mysql(max_tentatives=10):
+    for tentative in range(max_tentatives):
+        try:
+            SQLModel.metadata.create_all(engine)
+            print("Connexion MySQL réussie")
+            return
+        except Exception:
+            print(f"MySQL pas encore prêt, tentative {tentative + 1}/{max_tentatives}")
+            time.sleep(3)
+    raise Exception("Impossible de se connecter à MySQL")
 
-SQLModel.metadata.create_all(engine)
+attendre_mysql()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
