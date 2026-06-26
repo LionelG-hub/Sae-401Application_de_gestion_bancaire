@@ -106,7 +106,7 @@ async def connexion(utilisateur: schemas.UtilisateurLogin, db: Session = Depends
         "date": datetime.utcnow().isoformat()
     })
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer", "role": user.role.value}
 
 @app.get("/verify-token")
 async def verifier_token(token_data = Depends(auth.verifier_token)):
@@ -156,3 +156,8 @@ async def page_login(request: Request):
 async def page_login_agent(request: Request):
     # Affiche la page de connexion agent
     return templates.TemplateResponse(request=request, name="login_agent.html")
+
+@app.get("/register-page", response_class=HTMLResponse)
+async def page_register(request: Request):
+    # Affiche la page d'inscription
+    return templates.TemplateResponse(request=request, name="register.html")

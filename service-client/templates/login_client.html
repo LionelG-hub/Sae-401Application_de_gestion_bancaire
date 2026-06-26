@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion Client — Banque</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container" style="max-width: 420px; margin-top: 8vh;">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h4 class="card-title text-center mb-1">Espace Client</h4>
+                <p class="text-center text-muted mb-4">Banque — gestion de vos comptes</p>
+
+                <div id="erreur" class="alert alert-danger d-none"></div>
+
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="email" class="form-control" placeholder="client@bank.fr">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Mot de passe</label>
+                    <input type="password" id="motdepasse" class="form-control" placeholder="••••••••">
+                </div>
+
+                <button onclick="seConnecter()" class="btn btn-primary w-100">Se connecter</button>
+
+                <p class="text-center text-muted mt-3 mb-0" style="font-size: 0.85rem;">
+                    Compte de test : client@bank.fr / client123
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function afficherErreur(message) {
+            const e = document.getElementById('erreur');
+            e.textContent = message;
+            e.classList.remove('d-none');
+        }
+
+        async function seConnecter() {
+            const email = document.getElementById('email').value;
+            const motDePasse = document.getElementById('motdepasse').value;
+
+            try {
+                const reponse = await fetch('/client/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, mot_de_passe: motDePasse })
+                });
+
+                if (!reponse.ok) {
+                    afficherErreur('Email ou mot de passe incorrect');
+                    return;
+                }
+
+                const donnees = await reponse.json();
+                // Login et dashboard sur la MÊME origine (:8001) -> le token est lisible partout
+                localStorage.setItem('token', donnees.access_token);
+                window.location.href = '/client/dashboard';
+            } catch (err) {
+                afficherErreur('Serveur injoignable, réessayez');
+            }
+        }
+
+        // Permet de valider avec la touche Entrée
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') seConnecter();
+        });
+    </script>
+</body>
+</html>
