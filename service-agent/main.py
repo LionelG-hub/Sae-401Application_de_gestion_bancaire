@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session ,Field ,select
@@ -108,7 +107,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/")
 def health_check():
