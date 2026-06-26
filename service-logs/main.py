@@ -2,11 +2,11 @@ from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
 from fastapi import FastAPI,Request
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session, Field, select ,func
 from dotenv import load_dotenv
+import time
 import json
 import os
 import nats
@@ -43,7 +43,19 @@ async def handle_message(msg):
         session.add(log)
         session.commit()
 
-SQLModel.metadata.create_all(engine)
+def attendre_mysql(max_tentatives=10):
+    for tentative in range(max_tentatives):
+        try:
+            SQLModel.metadata.create_all(engine)
+            print("Connexion MySQL réussie")
+            return
+        except Exception:
+            print(f"MySQL pas encore prêt, tentative {tentative + 1}/{max_tentatives}")
+            time.sleep(3)
+    raise Exception("Impossible de se connecter à MySQL")
+
+attendre_mysql()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -53,7 +65,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 @app.get("/")
 def health_check():
