@@ -1,7 +1,10 @@
 from datetime import datetime
 from contextlib import asynccontextmanager
 from typing import Optional
-from fastapi import FastAPI
+from fastapi import FastAPI,Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session, Field, select ,func
 from dotenv import load_dotenv
 import json
@@ -49,6 +52,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
 @app.get("/")
 def health_check():
     return {"status": "service-logs ok"}
@@ -89,3 +95,7 @@ def get_logs_stats():
             "par_service": dict(par_service),
             "par_level": dict(par_level)
         }
+
+@app.get("/logs/dashboard", response_class=HTMLResponse)
+async def dashboard_logs(request: Request):
+    return templates.TemplateResponse(request=request, name="logs.html")

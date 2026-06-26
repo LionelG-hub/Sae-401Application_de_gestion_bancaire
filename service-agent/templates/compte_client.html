@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comptes Client</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+    <h1>Comptes du client</h1>
+    <a href="/agent/dashboard">← Retour</a>
+    <button onclick="deconnexion()">Déconnexion</button>
+</header>
+
+<section>
+    <div id="liste-comptes">Chargement...</div>
+</section>
+
+<script>
+    const userId = {{ user_id | tojson }};
+</script>
+<script src="/static/js/compte_client.js"></script>
+
+</body>
+</html>

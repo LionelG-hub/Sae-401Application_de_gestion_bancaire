@@ -1,7 +1,10 @@
 from datetime import datetime
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session ,Field ,select
 from dotenv import load_dotenv
 import os
@@ -82,17 +85,18 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
             detail="Token invalide"
         )
     data = response.json()
+    me_response = httpx.get(
+        "http://service-authentication:8000/me",
+        headers={"Authorization": f"Bearer {token}"}
+    )
+    agent_data = me_response.json()
     if data["role"] != "agent":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Accès réservé aux agents"
         )
         # Récupère les informations complètes de l'agent depuis le service auth
-    me_response = httpx.get(
-        "http://service-authentication:8000/me",
-        headers={"Authorization": f"Bearer {token}"}
-    )
-    agent_data = me_response.json()
+
 
     # Retourne l'id et les infos de l'agent
     return {
@@ -103,6 +107,8 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 
 app = FastAPI()
+templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def health_check():
@@ -197,3 +203,11 @@ def get_compte_client(user_id: int,user=Depends(verify_token)):
         if not comptes:
             return {"error": "compte introuvable"}
         return comptes
+
+@app.get("/agent/dashboard", response_class=HTMLResponse)
+async def dashboard_agent(request: Request):
+    return templates.TemplateResponse(request=request, name="agent.html")
+
+@app.get("/agent/clients/{user_id}/dashboard", response_class=HTMLResponse)
+async def dashboard_comptes_client(request: Request, user_id: int):
+    return templates.TemplateResponse(request=request, name="comptes_client.html", context={"user_id": user_id})

@@ -3,3 +3,6 @@ uvicorn
 sqlmodel
 pymysql
 nats-py
+jinja2
+python-multipart
+python-dotenv
