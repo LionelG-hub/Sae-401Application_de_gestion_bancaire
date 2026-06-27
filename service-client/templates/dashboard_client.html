@@ -25,7 +25,10 @@
             <!-- Mes comptes -->
             <div class="col-md-6">
                 <div class="card shadow-sm">
-                    <div class="card-header fw-semibold">Mes comptes</div>
+                    <div class="card-header fw-semibold d-flex justify-content-between align-items-center">
+                        <span>Mes comptes</span>
+                        <button onclick="ouvrirCompte()" class="btn btn-sm btn-outline-primary">+ Ouvrir un compte</button>
+                    </div>
                     <div class="card-body" id="liste-comptes">Chargement…</div>
                 </div>
             </div>
@@ -110,6 +113,22 @@
             document.getElementById('label-compte').textContent =
                 this.value === 'depot' ? 'Compte à créditer' : 'Compte source';
         });
+
+        async function ouvrirCompte() {
+            const reponse = await fetch('/comptes', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (reponse.status === 401) { window.location.href = '/client/login'; return; }
+            if (reponse.ok) {
+                const compte = await reponse.json();
+                afficher('succes', `Nouveau compte ${compte.num_compte} ouvert.`);
+                chargerComptes();
+            } else {
+                const donnees = await reponse.json();
+                afficher('erreur', donnees.detail || 'Erreur à l\'ouverture du compte');
+            }
+        }
 
         async function chargerComptes() {
             const reponse = await fetch('/comptes/me', {

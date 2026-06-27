@@ -1,5 +1,5 @@
 """
-service-client (Pôle 2 / Baye)
+service-client(1) (Pôle 2 / Baye)
 ================================
 C'est le COEUR métier de la banque. Il gère :
   - la consultation des comptes par le client,
@@ -98,7 +98,7 @@ async def publier_log(level: str, message: str, user_id: int = None):
         await nc.publish("logs.client", data)
         await nc.close()
     except Exception as e:
-        print(f"service-client : publication log échouée : {e}")
+        print(f"service-client(1) : publication log échouée : {e}")
 
 
 def appliquer_solde(session: Session, compte_id: int, delta: float):
@@ -123,17 +123,17 @@ def attendre_mysql(max_tentatives=10):
     for tentative in range(max_tentatives):
         try:
             SQLModel.metadata.create_all(engine)
-            print("service-client : connexion MySQL OK")
+            print("service-client(1) : connexion MySQL OK")
             return
         except Exception:
-            print(f"service-client : MySQL pas prêt, tentative {tentative + 1}/{max_tentatives}")
+            print(f"service-client(1) : MySQL pas prêt, tentative {tentative + 1}/{max_tentatives}")
             time.sleep(3)
-    raise Exception("service-client : connexion MySQL impossible")
+    raise Exception("service-client(1) : connexion MySQL impossible")
 
 
 attendre_mysql()
 
-app = FastAPI(title="service-client")
+app = FastAPI(title="service-client(1)")
 
 # Pages web du client (servies par ce service)
 templates = Jinja2Templates(directory="templates")
@@ -153,7 +153,7 @@ class LoginInput(BaseModel):
 
 @app.get("/")
 def health_check():
-    return {"status": "service-client ok"}
+    return {"status": "service-client(1) ok"}
 
 
 # ================= INTERFACE WEB CLIENT =================
@@ -172,7 +172,7 @@ def page_dashboard(request: Request):
 def relais_login(data: LoginInput):
     # On RELAIE la connexion au service d'authentification (qui fait tout le
     # vrai travail : vérif du mot de passe, création du JWT). Avantage : le
-    # navigateur ne parle qu'à service-client -> pas de problème de CORS.
+    # navigateur ne parle qu'à service-client(1) -> pas de problème de CORS.
     try:
         r = httpx.post(
             f"{AUTH_SERVICE_URL}/login",
@@ -194,6 +194,27 @@ def mes_comptes(user=Depends(get_current_user)):
             select(Compte).where(Compte.user_id == user["id"])
         ).all()
     return comptes
+
+
+@app.post("/comptes")
+async def ouvrir_compte(user=Depends(get_current_user)):
+    # Un client ouvre un nouveau compte (solde 0). C'est ce qui permet, le jour
+    # de la démo, de créer un client puis de lui ouvrir un compte EN DIRECT,
+    # sans rien écrire à la main dans la base.
+    if user["role"] != "client":
+        raise HTTPException(status_code=403, detail="Réservé aux clients")
+    with Session(engine) as session:
+        compte = Compte(user_id=user["id"], num_compte="—", solde=0.0)
+        session.add(compte)
+        session.commit()
+        session.refresh(compte)
+        # numéro de compte lisible, basé sur l'id auto-incrémenté (ex: CPT004)
+        compte.num_compte = f"CPT{compte.id:03d}"
+        session.add(compte)
+        session.commit()
+        session.refresh(compte)
+    await publier_log("INFO", f"Compte {compte.num_compte} ouvert", user["id"])
+    return compte
 
 
 @app.get("/operations/me")
