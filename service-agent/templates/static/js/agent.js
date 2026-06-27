@@ -1,5 +1,5 @@
 const token = localStorage.getItem("token");
-if (!token) window.location.href = "/login-agent-page";
+if (!token) window.location.href = "http://localhost:8000/login-agent-page";
 
 const headers = { "Authorization": `Bearer ${token}` };
 
@@ -60,7 +60,7 @@ async function rechercherComptes() {
 
 function deconnexion() {
     localStorage.removeItem("token");
-    window.location.href = "/login-agent-page";
+    window.location.href = 'http://localhost:8000/login-agent-page';
 }
 
 document.addEventListener("DOMContentLoaded", chargerOperations);
