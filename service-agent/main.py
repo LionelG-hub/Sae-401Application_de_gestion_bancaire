@@ -3,6 +3,7 @@ from typing import Optional
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from sqlmodel import SQLModel, create_engine, Session ,Field ,select
@@ -107,6 +108,7 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 
@@ -130,23 +132,45 @@ def get_historique(user=Depends(verify_token)):
             select(Operation).where(Operation.statut != "en_attente")
         ).all()
         return operations
+
 @app.patch("/agent/operations/{id}/valider")
-async def valider_operation(id: int,user=Depends(verify_token)):
+async def valider_operation(id: int, user=Depends(verify_token)):
     with Session(engine) as session:
-        # 1. Récupérer l'opération
         operation = session.get(Operation, id)
 
-        # 2. Vérifier qu'elle existe
         if not operation:
             return {"error": "opération introuvable"}
 
+        # Appliquer le changement de solde selon le type d'opération
+        if operation.type_op == "retrait":
+            compte = session.get(Compte, operation.compte_source)
+            if not compte:
+                return {"error": "compte source introuvable"}
+            if compte.solde < operation.montant:
+                return {"error": "solde insuffisant"}
+            compte.solde -= operation.montant
+            compte.derniere_operation = datetime.now()
+            session.add(compte)
+
+        elif operation.type_op == "virement":
+            compte_source = session.get(Compte, operation.compte_source)
+            compte_dest = session.get(Compte, operation.compte_dest)
+            if not compte_source or not compte_dest:
+                return {"error": "compte introuvable"}
+            if compte_source.solde < operation.montant:
+                return {"error": "solde insuffisant"}
+            compte_source.solde -= operation.montant
+            compte_source.derniere_operation = datetime.now()
+            compte_dest.solde += operation.montant
+            compte_dest.derniere_operation = datetime.now()
+            session.add(compte_source)
+            session.add(compte_dest)
+
         operation.statut = "validee"
         operation.traite_par = user["id"]
-
-        # 4. Sauvegarder
-        session.add(operation)  # signale la modification à SQLModel
-        session.commit()  # envoie le UPDATE à MySQL
-        session.refresh(operation)  # recharge les données depuis MySQL
+        session.add(operation)
+        session.commit()
+        session.refresh(operation)
 
         await publish_log(
             level="INFO",
@@ -155,7 +179,6 @@ async def valider_operation(id: int,user=Depends(verify_token)):
         )
 
         return operation
-
 @app.patch("/agent/operations/{id}/refuser")
 async def refuser_operation(id: int ,user=Depends(verify_token)):
     with Session(engine) as session:
