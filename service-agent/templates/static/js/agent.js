@@ -1,3 +1,8 @@
+
+const params = new URLSearchParams(window.location.search);
+const tokenUrl = params.get("token");
+if (tokenUrl) localStorage.setItem("token", tokenUrl);
+
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "http://localhost:8000/login-agent-page";
 
