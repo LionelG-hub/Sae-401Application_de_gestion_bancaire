@@ -60,7 +60,7 @@
 
                 const donnees = await reponse.json();
                 // Login et dashboard sur la MÊME origine (:8001) -> le token est lisible partout
-                localStorage.setItem('token', donnees.access_token);
+                sessionStorage.setItem('token', donnees.access_token);
                 window.location.href = '/client/dashboard';
             } catch (err) {
                 afficherErreur('Serveur injoignable, réessayez');
