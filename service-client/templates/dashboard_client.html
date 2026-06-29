@@ -93,7 +93,7 @@
     </div>
 
     <script>
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         if (!token) {
             window.location.href = '/client/login';
         }
@@ -228,7 +228,7 @@
         }
 
         function seDeconnecter() {
-            localStorage.removeItem('token');
+            sessionStorage.removeItem('token');
             window.location.href = '/client/login';
         }
 
