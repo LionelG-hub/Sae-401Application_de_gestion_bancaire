@@ -204,17 +204,18 @@ async def ouvrir_compte(user=Depends(get_current_user)):
     if user["role"] != "client":
         raise HTTPException(status_code=403, detail="Réservé aux clients")
     with Session(engine) as session:
-        compte = Compte(user_id=user["id"], num_compte="—", solde=0.0)
-        session.add(compte)
-        session.commit()
-        session.refresh(compte)
+        op = Operation(
+            type_op="creation_compte",
+            montant=0.0,
+            statut=STATUT_ATTENTE,
+            user_id=user["id"],
+        )
         # numéro de compte lisible, basé sur l'id auto-incrémenté (ex: CPT004)
-        compte.num_compte = f"CPT{compte.id:03d}"
-        session.add(compte)
+        session.add(op)
         session.commit()
-        session.refresh(compte)
-    await publier_log("INFO", f"Compte {compte.num_compte} ouvert", user["id"])
-    return compte
+        session.refresh(op)
+    await publier_log("INFO", f"Demande création compte par client {user['id']}", user["id"])
+    return {"message": "Demande de création de compte en attente de validation"}
 
 
 @app.get("/operations/me")
@@ -227,7 +228,9 @@ def mes_operations(user=Depends(get_current_user)):
         }
         toutes = session.exec(select(Operation)).all()
         ops = [o for o in toutes
-               if o.compte_source in mes_comptes_ids or o.compte_dest in mes_comptes_ids]
+               if o.compte_source in mes_comptes_ids
+               or o.compte_dest in mes_comptes_ids
+               or o.user_id == user["id"]]
     return ops
 
 
