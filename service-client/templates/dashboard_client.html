@@ -119,16 +119,14 @@
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (reponse.status === 401) { window.location.href = '/client/login'; return; }
-            if (reponse.ok) {
-                const compte = await reponse.json();
-                afficher('succes', `Nouveau compte ${compte.num_compte} ouvert.`);
-                chargerComptes();
-            } else {
-                const donnees = await reponse.json();
-                afficher('erreur', donnees.detail || 'Erreur à l\'ouverture du compte');
-            }
+        if (reponse.status === 401) { window.location.href = '/client/login'; return; }
+            const donnees = await reponse.json();
+        if (reponse.ok) {
+            afficher('succes', 'Demande envoyée, en attente de validation par un agent.');
+        } else {
+            afficher('erreur', donnees.detail || 'Erreur à l\'ouverture du compte');
         }
+}
 
         async function chargerComptes() {
             const reponse = await fetch('/comptes/me', {

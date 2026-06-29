@@ -139,14 +139,16 @@ async def valider_operation(id: int, user=Depends(verify_token)):
         operation = session.get(Operation, id)
 
         if not operation:
+            await publish_log(level="ERROR", message=f"Opération {id} introuvable", user_id=user["id"])
             return {"error": "opération introuvable"}
 
-        # Appliquer le changement de solde selon le type d'opération
         if operation.type_op == "retrait":
             compte = session.get(Compte, operation.compte_source)
             if not compte:
+                await publish_log(level="ERROR", message=f"Compte source introuvable pour opération {id}", user_id=user["id"])
                 return {"error": "compte source introuvable"}
             if compte.solde < operation.montant:
+                await publish_log(level="WARNING", message=f"Solde insuffisant pour opération {id}", user_id=user["id"])
                 return {"error": "solde insuffisant"}
             compte.solde -= operation.montant
             compte.derniere_operation = datetime.now()
@@ -156,8 +158,10 @@ async def valider_operation(id: int, user=Depends(verify_token)):
             compte_source = session.get(Compte, operation.compte_source)
             compte_dest = session.get(Compte, operation.compte_dest)
             if not compte_source or not compte_dest:
+                await publish_log(level="ERROR", message=f"Compte introuvable pour virement opération {id}", user_id=user["id"])
                 return {"error": "compte introuvable"}
             if compte_source.solde < operation.montant:
+                await publish_log(level="WARNING", message=f"Solde insuffisant pour virement opération {id}", user_id=user["id"])
                 return {"error": "solde insuffisant"}
             compte_source.solde -= operation.montant
             compte_source.derniere_operation = datetime.now()
@@ -172,12 +176,7 @@ async def valider_operation(id: int, user=Depends(verify_token)):
         session.commit()
         session.refresh(operation)
 
-        await publish_log(
-            level="INFO",
-            message=f"Opération {id} validée",
-            user_id=operation.traite_par
-        )
-
+        await publish_log(level="INFO", message=f"Opération {id} validée", user_id=operation.traite_par)
         return operation
 @app.patch("/agent/operations/{id}/refuser")
 async def refuser_operation(id: int ,user=Depends(verify_token)):
@@ -196,7 +195,7 @@ async def refuser_operation(id: int ,user=Depends(verify_token)):
         session.refresh(operation)
 
         await publish_log(
-            level="INFO",
+            level="WARNING",
             message=f"Opération {id} refuséé",
             user_id=operation.traite_par
         )
@@ -220,10 +219,9 @@ def get_clients():
         return clients
 """
 @app.get("/agent/clients/{user_id}/comptes")
-def get_compte_client(user_id: int,user=Depends(verify_token)):
+def get_compte_client(user_id: int, user=Depends(verify_token)):
     with Session(engine) as session:
-        comptes= session.exec(select(Compte).where(Compte.user_id == user_id)
-        ).all()
+        comptes = session.exec(select(Compte).where(Compte.user_id == user_id)).all()
         if not comptes:
             return {"error": "compte introuvable"}
         return comptes
