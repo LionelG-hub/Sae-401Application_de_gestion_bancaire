@@ -1,22 +1,3 @@
-"""
-service-client(1) (Pôle 2 / Baye)
-================================
-C'est le COEUR métier de la banque. Il gère :
-  - la consultation des comptes par le client,
-  - la création d'opérations (retrait / depot / virement),
-  - l'application de l'effet d'une opération quand elle est validée
-    (c'est lui qui déplace réellement l'argent entre les comptes).
-
-Règles importantes (sujet) :
-  - retrait et virement -> doivent être validés par un agent (statut "en_attente"),
-  - depot -> appliqué immédiatement (pas de validation),
-  - statuts EXACTS partagés avec l'agent : en_attente / validee / refusee.
-
-Sécurité :
-  - L'identité vient TOUJOURS du token. On ne décode pas le JWT ici : on
-    demande au service d'authentification (GET /me) qui est l'utilisateur.
-  - Un client ne peut agir que sur SES comptes (vérif via l'id du token).
-"""
 from datetime import datetime
 from typing import Optional
 
