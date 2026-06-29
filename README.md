@@ -158,7 +158,7 @@ docker compose down
 docker compose down -v
 
 # Reconstruire après une modification du code
-docker compose up --build
+docker compose up --build -d
 ```
 
 ---
