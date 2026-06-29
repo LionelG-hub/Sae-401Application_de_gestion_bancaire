@@ -99,13 +99,7 @@ cat .env
 
 ## 4. Lancer l'application
 
-```bash
-docker compose up --build
-```
-
-La première fois, la construction des images prend une à deux minutes. Patienter
-ensuite ~30 secondes que MySQL finisse de s'initialiser (les services affichent
-« Connexion MySQL réussie » dans les logs).
+La première fois, la construction des images prend une à deux minutes. Patienter ensuite ~30 secondes que MySQL finisse de s'initialiser (les services affichent « Connexion MySQL réussie » dans les logs).
 
 Pour lancer en arrière-plan (sans bloquer le terminal), ajouter `-d` :
 
