@@ -8,6 +8,7 @@ if (!token) window.location.href = "http://localhost:8000/login-agent-page";
 
 const headers = { "Authorization": `Bearer ${token}` };
 
+
 async function chargerOperations() {
     const res = await fetch("/agent/operations/en-attente", { headers });
     const ops = await res.json();
@@ -44,7 +45,8 @@ async function refuserOperation(id) {
 async function rechercherComptes() {
     const userId = document.getElementById("user-id").value.trim();
     if (!userId) { alert("Veuillez entrer un ID client."); return; }
-
+    console.log("token:", token);
+    console.log("headers:", headers);
     const res = await fetch(`/agent/clients/${userId}/comptes`, { headers });
     const data = await res.json();
     const div = document.getElementById("liste-comptes");
