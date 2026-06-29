@@ -69,6 +69,11 @@ function deconnexion() {
     localStorage.removeItem("token");
     window.location.href = 'http://localhost:8000/login-agent-page';
 }
+function voirComptes() {
+    const userId = document.getElementById("user-id").value.trim();
+    if (!userId) { alert("Veuillez entrer un ID client."); return; }
+    window.location.href = `http://localhost:8004/agent/clients/${userId}/dashboard?token=${token}`;
+}
 
 document.addEventListener("DOMContentLoaded", chargerOperations);
 

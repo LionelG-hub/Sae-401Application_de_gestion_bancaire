@@ -235,3 +235,15 @@ async def dashboard_agent(request: Request):
 @app.get("/agent/clients/{user_id}/dashboard", response_class=HTMLResponse)
 async def dashboard_comptes_client(request: Request, user_id: int):
     return templates.TemplateResponse(request=request, name="compte_client.html", context={"user_id": user_id})
+
+@app.get("/agent/clients/{user_id}/operations")
+def get_operations_client(user_id: int, user=Depends(verify_token)):
+    with Session(engine) as session:
+        comptes = session.exec(
+            select(Compte).where(Compte.user_id == user_id)
+        ).all()
+        compte_ids = {c.id for c in comptes}
+        operations = session.exec(select(Operation)).all()
+        ops_client = [o for o in operations
+                      if o.compte_source in compte_ids or o.compte_dest in compte_ids]
+    return ops_client

@@ -3,13 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Interface Agent</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
 
 <header>
     <h1>Interface Agent Bancaire</h1>
     <button onclick="deconnexion()">Déconnexion</button>
+    <button onclick="voirComptes()">Comptes clients</button>
+    <button onclick="window.location.href='http://localhost:8005/logs/dashboard'">Logs</button>
 </header>
 
 <section>
@@ -29,5 +31,5 @@
 </section>
 
 </body>
-<script src="/static/js/agent.js?v=2"></script>
+<script src="/static/js/agent.js?v=3"></script>
 </html>

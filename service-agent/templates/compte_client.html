@@ -4,18 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Comptes Client</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=2">
 </head>
 <body>
 
 <header>
     <h1>Comptes du client</h1>
-    <a href="/agent/dashboard">← Retour</a>
-    <button onclick="deconnexion()">Déconnexion</button>
+    <button onclick="window.location.href='http://localhost:8004/agent/dashboard'">Retour agent</button>
+
 </header>
 
 <section>
+    <h2> Ces Comptes </h2>
     <div id="liste-comptes">Chargement...</div>
+</section>
+<section>
+    <h2>Historique des opérations</h2>
+    <div id="liste-operations">Chargement...</div>
 </section>
 
 <script>
