@@ -10,6 +10,7 @@ L'application est composée de 4 services et de 2 briques d'infrastructure, le t
 | `service-logs` | Collecte et consultation des journaux | 8005 | http://localhost:8005/docs |
 | `MySQL` | Base de données (auth_db, bank_db, logs_db) | 3306 | — |
 | `NATS` | Bus de messages pour les logs | 4222 | — |
+
 **Important** : tous les services tournent dans des conteneurs Docker. Il n'y a donc rien à installer en Python (ni MySQL, ni les bibliothèques) sur la machine : Docker construit tout automatiquement. Les seuls prérequis à installer sont Git et Docker.
 ## 1. Prérequis : installer Git et Docker
 Les commandes ci-dessous sont prévues pour **Debian / Ubuntu**.
@@ -26,6 +27,5 @@ Méthode officielle (recommandée), qui installe Docker Engine **et** le plugin
 `docker compose` :
 
 ```bash
-# 1. Outils de base
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl
