@@ -66,6 +66,7 @@ class Operation(SQLModel, table=True):
     traite_par: Optional[int] = Field(default=None)
     statut: str = Field(default=STATUT_ATTENTE)
     created_at: datetime = Field(default_factory=datetime.now)
+    user_id: Optional[int] = Field(default=None)
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:

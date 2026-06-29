@@ -31,6 +31,7 @@ class Operation(SQLModel, table=True):
     traite_par   : Optional[int] = Field(default=None)
     statut        : str           = Field(default="en_attente")
     created_at    : datetime      = Field(default_factory=datetime.now)
+    user_id       : Optional[int] = Field(default=None)
 
 class Compte(SQLModel, table=True):
     id                 : Optional[int] = Field(default=None, primary_key=True)
@@ -110,7 +111,6 @@ async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(secur
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="templates/static"), name="static")
 
 
 @app.get("/")
@@ -169,6 +169,17 @@ async def valider_operation(id: int, user=Depends(verify_token)):
             compte_dest.derniere_operation = datetime.now()
             session.add(compte_source)
             session.add(compte_dest)
+
+        elif operation.type_op == "creation_compte":
+            compte = Compte(
+                user_id=operation.user_id,
+                num_compte="—",
+                solde=0.0
+            )
+            session.add(compte)
+            session.flush()
+            compte.num_compte = f"CPT{compte.id:03d}"
+            session.add(compte)
 
         operation.statut = "validee"
         operation.traite_par = user["id"]
