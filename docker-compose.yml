@@ -1,6 +1,5 @@
 services:
 
-  # Base de données MySQL partagée par tous les services
   mysql:
     image: mysql:8.0
     container_name: container_sql
@@ -15,14 +14,12 @@ services:
       - mysql_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
-  # Serveur de messagerie NATS pour les logs
   nats:
     image: nats:2.10-alpine
     container_name: container_nats
     ports:
       - "4222:4222"
 
-  # Service authentification — Ibrahima
   service-authentication:
     build: ./service-authentication
     container_name: container_auth
@@ -38,7 +35,6 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=30
       - NATS_URL=nats://nats:4222
 
-  # Service agent bancaire — L
   service-agent:
     build: ./service-agent
     container_name: container_agent
@@ -52,7 +48,6 @@ services:
       - DATABASE_URL=mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/bank_db
       - NATS_URL=nats://nats:4222
 
-  # Service client — B
   service-client:
     build: service-client
     container_name: container_client
@@ -67,7 +62,6 @@ services:
       - AUTH_SERVICE_URL=http://service-authentication:8000
       - NATS_URL=nats://nats:4222
 
-  # Service logs
   service-logs:
     build: ./service-logs
     container_name: container_logs
